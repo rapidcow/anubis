@@ -24,11 +24,13 @@ type ParsedConfig struct {
 	Bots              []Bot
 	DNSBL             bool
 	DefaultDifficulty int
+	StatusCodes       config.StatusCodes
 }
 
 func NewParsedConfig(orig *config.Config) *ParsedConfig {
 	return &ParsedConfig{
-		orig: orig,
+		orig:        orig,
+		StatusCodes: orig.StatusCodes,
 	}
 }
 
@@ -87,6 +89,15 @@ func ParseConfig(fin io.Reader, fname string, defaultDifficulty int) (*ParsedCon
 			c, err := NewHeadersChecker(b.HeadersRegex)
 			if err != nil {
 				validationErrs = append(validationErrs, fmt.Errorf("while processing rule %s headers regex map: %w", b.Name, err))
+			} else {
+				cl = append(cl, c)
+			}
+		}
+
+		if b.Expression != nil {
+			c, err := NewCELChecker(b.Expression)
+			if err != nil {
+				validationErrs = append(validationErrs, fmt.Errorf("while processing rule %s expressions: %w", b.Name, err))
 			} else {
 				cl = append(cl, c)
 			}

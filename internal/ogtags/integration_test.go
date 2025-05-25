@@ -56,10 +56,10 @@ func TestIntegrationGetOGTags(t *testing.T) {
 
 	// Test with different configurations
 	testCases := []struct {
+		expectedTags map[string]string
 		name         string
 		path         string
 		query        string
-		expectedTags map[string]string
 		expectError  bool
 	}{
 		{
@@ -93,7 +93,7 @@ func TestIntegrationGetOGTags(t *testing.T) {
 			expectError:  false,
 		},
 		{
-			name:         "Non-existent page",
+			name:         "Nonexistent page",
 			path:         "/not-found",
 			query:        "",
 			expectedTags: nil,
@@ -104,7 +104,7 @@ func TestIntegrationGetOGTags(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create cache instance
-			cache := NewOGTagCache(ts.URL, true, 1*time.Minute)
+			cache := NewOGTagCache(ts.URL, true, 1*time.Minute, false)
 
 			// Create URL for test
 			testURL, _ := url.Parse(ts.URL)
@@ -112,7 +112,8 @@ func TestIntegrationGetOGTags(t *testing.T) {
 			testURL.RawQuery = tc.query
 
 			// Get OG tags
-			ogTags, err := cache.GetOGTags(testURL)
+			// Pass the host from the test URL
+			ogTags, err := cache.GetOGTags(testURL, testURL.Host)
 
 			// Check error expectation
 			if tc.expectError {
@@ -139,7 +140,8 @@ func TestIntegrationGetOGTags(t *testing.T) {
 			}
 
 			// Test cache retrieval
-			cachedOGTags, err := cache.GetOGTags(testURL)
+			// Pass the host from the test URL
+			cachedOGTags, err := cache.GetOGTags(testURL, testURL.Host)
 			if err != nil {
 				t.Fatalf("failed to get OG tags from cache: %v", err)
 			}

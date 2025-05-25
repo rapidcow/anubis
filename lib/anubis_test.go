@@ -4,15 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/TecharoHQ/anubis"
 	"github.com/TecharoHQ/anubis/data"
 	"github.com/TecharoHQ/anubis/internal"
 	"github.com/TecharoHQ/anubis/lib/policy"
+	"github.com/TecharoHQ/anubis/lib/policy/config"
 )
 
 func loadPolicies(t *testing.T, fname string) *policy.ParsedConfig {
@@ -41,10 +44,10 @@ type challenge struct {
 	Challenge string `json:"challenge"`
 }
 
-func makeChallenge(t *testing.T, ts *httptest.Server) challenge {
+func makeChallenge(t *testing.T, ts *httptest.Server, cli *http.Client) challenge {
 	t.Helper()
 
-	resp, err := ts.Client().Post(ts.URL+"/.within.website/x/cmd/anubis/api/make-challenge", "", nil)
+	resp, err := cli.Post(ts.URL+"/.within.website/x/cmd/anubis/api/make-challenge", "", nil)
 	if err != nil {
 		t.Fatalf("can't request challenge: %v", err)
 	}
@@ -56,6 +59,54 @@ func makeChallenge(t *testing.T, ts *httptest.Server) challenge {
 	}
 
 	return chall
+}
+
+func handleChallengeZeroDifficulty(t *testing.T, ts *httptest.Server, cli *http.Client, chall challenge) *http.Response {
+	t.Helper()
+
+	nonce := 0
+	elapsedTime := 420
+	redir := "/"
+	calculated := ""
+	calcString := fmt.Sprintf("%s%d", chall.Challenge, nonce)
+	calculated = internal.SHA256sum(calcString)
+
+	req, err := http.NewRequest(http.MethodGet, ts.URL+"/.within.website/x/cmd/anubis/api/pass-challenge", nil)
+	if err != nil {
+		t.Fatalf("can't make request: %v", err)
+	}
+
+	q := req.URL.Query()
+	q.Set("response", calculated)
+	q.Set("nonce", fmt.Sprint(nonce))
+	q.Set("redir", redir)
+	q.Set("elapsedTime", fmt.Sprint(elapsedTime))
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := cli.Do(req)
+	if err != nil {
+		t.Fatalf("can't do request: %v", err)
+	}
+
+	return resp
+}
+
+func httpClient(t *testing.T) *http.Client {
+	t.Helper()
+
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cli := &http.Client{
+		Jar: jar,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	return cli
 }
 
 func TestLoadPolicies(t *testing.T) {
@@ -83,7 +134,6 @@ func TestCVE2025_24369(t *testing.T) {
 		Next:   http.NewServeMux(),
 		Policy: pol,
 
-		CookieDomain:      "local.cetacean.club",
 		CookiePartitioned: true,
 		CookieName:        t.Name(),
 	})
@@ -91,38 +141,63 @@ func TestCVE2025_24369(t *testing.T) {
 	ts := httptest.NewServer(internal.RemoteXRealIP(true, "tcp", srv))
 	defer ts.Close()
 
-	chall := makeChallenge(t, ts)
-	calcString := fmt.Sprintf("%s%d", chall.Challenge, 0)
-	calculated := internal.SHA256sum(calcString)
-	nonce := 0
-	elapsedTime := 420
-	redir := "/"
-
-	cli := ts.Client()
-	cli.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		return http.ErrUseLastResponse
-	}
-
-	req, err := http.NewRequest(http.MethodGet, ts.URL+"/.within.website/x/cmd/anubis/api/pass-challenge", nil)
-	if err != nil {
-		t.Fatalf("can't make request: %v", err)
-	}
-
-	q := req.URL.Query()
-	q.Set("response", calculated)
-	q.Set("nonce", fmt.Sprint(nonce))
-	q.Set("redir", redir)
-	q.Set("elapsedTime", fmt.Sprint(elapsedTime))
-	req.URL.RawQuery = q.Encode()
-
-	resp, err := cli.Do(req)
-	if err != nil {
-		t.Fatalf("can't do challenge passing")
-	}
+	cli := httpClient(t)
+	chall := makeChallenge(t, ts, cli)
+	resp := handleChallengeZeroDifficulty(t, ts, cli, chall)
 
 	if resp.StatusCode == http.StatusFound {
 		t.Log("Regression on CVE-2025-24369")
 		t.Errorf("wanted HTTP status %d, got: %d", http.StatusForbidden, resp.StatusCode)
+	}
+}
+
+func TestCookieCustomExpiration(t *testing.T) {
+	pol := loadPolicies(t, "")
+	pol.DefaultDifficulty = 0
+	ckieExpiration := 10 * time.Minute
+
+	srv := spawnAnubis(t, Options{
+		Next:   http.NewServeMux(),
+		Policy: pol,
+
+		CookieExpiration: ckieExpiration,
+	})
+
+	ts := httptest.NewServer(internal.RemoteXRealIP(true, "tcp", srv))
+	defer ts.Close()
+
+	cli := httpClient(t)
+	chall := makeChallenge(t, ts, cli)
+
+	requestReceiveLowerBound := time.Now().Add(-1 * time.Minute)
+	resp := handleChallengeZeroDifficulty(t, ts, cli, chall)
+	requestReceiveUpperBound := time.Now()
+
+	if resp.StatusCode != http.StatusFound {
+		resp.Write(os.Stderr)
+		t.Errorf("wanted %d, got: %d", http.StatusFound, resp.StatusCode)
+	}
+
+	var ckie *http.Cookie
+	for _, cookie := range resp.Cookies() {
+		t.Logf("%#v", cookie)
+		if cookie.Name == srv.cookieName {
+			ckie = cookie
+			break
+		}
+	}
+	if ckie == nil {
+		t.Errorf("Cookie %q not found", srv.cookieName)
+		return
+	}
+
+	expirationLowerBound := requestReceiveLowerBound.Add(ckieExpiration)
+	expirationUpperBound := requestReceiveUpperBound.Add(ckieExpiration)
+	// Since the cookie expiration precision is only to the second due to the Unix() call, we can
+	// lower the level of expected precision.
+	if ckie.Expires.Unix() < expirationLowerBound.Unix() || ckie.Expires.Unix() > expirationUpperBound.Unix() {
+		t.Errorf("cookie expiration is not within the expected range. expected between: %v and %v. got: %v", expirationLowerBound, expirationUpperBound, ckie.Expires)
+		return
 	}
 }
 
@@ -134,56 +209,21 @@ func TestCookieSettings(t *testing.T) {
 		Next:   http.NewServeMux(),
 		Policy: pol,
 
-		CookieDomain:      "local.cetacean.club",
+		CookieDomain:      "127.0.0.1",
 		CookiePartitioned: true,
 		CookieName:        t.Name(),
+		CookieExpiration:  anubis.CookieDefaultExpirationTime,
 	})
 
+	requestReceiveLowerBound := time.Now()
 	ts := httptest.NewServer(internal.RemoteXRealIP(true, "tcp", srv))
 	defer ts.Close()
 
-	cli := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
+	cli := httpClient(t)
+	chall := makeChallenge(t, ts, cli)
 
-	resp, err := cli.Post(ts.URL+"/.within.website/x/cmd/anubis/api/make-challenge", "", nil)
-	if err != nil {
-		t.Fatalf("can't request challenge: %v", err)
-	}
-	defer resp.Body.Close()
-
-	var chall = struct {
-		Challenge string `json:"challenge"`
-	}{}
-	if err := json.NewDecoder(resp.Body).Decode(&chall); err != nil {
-		t.Fatalf("can't read challenge response body: %v", err)
-	}
-
-	nonce := 0
-	elapsedTime := 420
-	redir := "/"
-	calculated := ""
-	calcString := fmt.Sprintf("%s%d", chall.Challenge, nonce)
-	calculated = internal.SHA256sum(calcString)
-
-	req, err := http.NewRequest(http.MethodGet, ts.URL+"/.within.website/x/cmd/anubis/api/pass-challenge", nil)
-	if err != nil {
-		t.Fatalf("can't make request: %v", err)
-	}
-
-	q := req.URL.Query()
-	q.Set("response", calculated)
-	q.Set("nonce", fmt.Sprint(nonce))
-	q.Set("redir", redir)
-	q.Set("elapsedTime", fmt.Sprint(elapsedTime))
-	req.URL.RawQuery = q.Encode()
-
-	resp, err = cli.Do(req)
-	if err != nil {
-		t.Fatalf("can't do challenge passing")
-	}
+	resp := handleChallengeZeroDifficulty(t, ts, cli, chall)
+	requestReceiveUpperBound := time.Now()
 
 	if resp.StatusCode != http.StatusFound {
 		resp.Write(os.Stderr)
@@ -193,18 +233,27 @@ func TestCookieSettings(t *testing.T) {
 	var ckie *http.Cookie
 	for _, cookie := range resp.Cookies() {
 		t.Logf("%#v", cookie)
-		if cookie.Name == anubis.CookieName {
+		if cookie.Name == srv.cookieName {
 			ckie = cookie
 			break
 		}
 	}
 	if ckie == nil {
-		t.Errorf("Cookie %q not found", anubis.CookieName)
+		t.Errorf("Cookie %q not found", srv.cookieName)
 		return
 	}
 
-	if ckie.Domain != "local.cetacean.club" {
-		t.Errorf("cookie domain is wrong, wanted local.cetacean.club, got: %s", ckie.Domain)
+	if ckie.Domain != "127.0.0.1" {
+		t.Errorf("cookie domain is wrong, wanted 127.0.0.1, got: %s", ckie.Domain)
+	}
+
+	expirationLowerBound := requestReceiveLowerBound.Add(anubis.CookieDefaultExpirationTime)
+	expirationUpperBound := requestReceiveUpperBound.Add(anubis.CookieDefaultExpirationTime)
+	// Since the cookie expiration precision is only to the second due to the Unix() call, we can
+	// lower the level of expected precision.
+	if ckie.Expires.Unix() < expirationLowerBound.Unix() || ckie.Expires.Unix() > expirationUpperBound.Unix() {
+		t.Errorf("cookie expiration is not within the expected range. expected between: %v and %v. got: %v", expirationLowerBound, expirationUpperBound, ckie.Expires)
+		return
 	}
 
 	if ckie.Partitioned != srv.opts.CookiePartitioned {
@@ -353,6 +402,10 @@ func TestBasePrefix(t *testing.T) {
 				t.Fatalf("can't make request: %v", err)
 			}
 
+			for _, ckie := range resp.Cookies() {
+				req.AddCookie(ckie)
+			}
+
 			q := req.URL.Query()
 			q.Set("response", calculated)
 			q.Set("nonce", fmt.Sprint(nonce))
@@ -390,6 +443,109 @@ func TestBasePrefix(t *testing.T) {
 			if ckie.Path != expectedPath {
 				t.Errorf("cookie path is wrong, wanted %s, got: %s", expectedPath, ckie.Path)
 			}
+		})
+	}
+}
+
+func TestCustomStatusCodes(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Log(r.UserAgent())
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, "OK")
+	})
+
+	statusMap := map[string]int{
+		"ALLOW":     200,
+		"CHALLENGE": 401,
+		"DENY":      403,
+	}
+
+	pol := loadPolicies(t, "./testdata/aggressive_403.yaml")
+	pol.DefaultDifficulty = 4
+
+	srv := spawnAnubis(t, Options{
+		Next:   h,
+		Policy: pol,
+	})
+
+	ts := httptest.NewServer(internal.RemoteXRealIP(true, "tcp", srv))
+	defer ts.Close()
+
+	for userAgent, statusCode := range statusMap {
+		t.Run(userAgent, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, ts.URL, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req.Header.Set("User-Agent", userAgent)
+
+			resp, err := ts.Client().Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if resp.StatusCode != statusCode {
+				t.Errorf("wanted status code %d but got: %d", statusCode, resp.StatusCode)
+			}
+		})
+	}
+}
+
+func TestCloudflareWorkersRule(t *testing.T) {
+	for _, variant := range []string{"cel", "header"} {
+		t.Run(variant, func(t *testing.T) {
+			pol := loadPolicies(t, "./testdata/cloudflare-workers-"+variant+".yaml")
+
+			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintln(w, "OK")
+			})
+
+			s, err := New(Options{
+				Next:           h,
+				Policy:         pol,
+				ServeRobotsTXT: true,
+			})
+			if err != nil {
+				t.Fatalf("can't construct libanubis.Server: %v", err)
+			}
+
+			t.Run("with-cf-worker-header", func(t *testing.T) {
+				req, err := http.NewRequest(http.MethodGet, "/", nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				req.Header.Add("X-Real-Ip", "127.0.0.1")
+				req.Header.Add("Cf-Worker", "true")
+
+				cr, _, err := s.check(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if cr.Rule != config.RuleDeny {
+					t.Errorf("rule is wrong, wanted %s, got: %s", config.RuleDeny, cr.Rule)
+				}
+			})
+
+			t.Run("no-cf-worker-header", func(t *testing.T) {
+				req, err := http.NewRequest(http.MethodGet, "/", nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				req.Header.Add("X-Real-Ip", "127.0.0.1")
+
+				cr, _, err := s.check(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if cr.Rule != config.RuleAllow {
+					t.Errorf("rule is wrong, wanted %s, got: %s", config.RuleAllow, cr.Rule)
+				}
+			})
 		})
 	}
 }

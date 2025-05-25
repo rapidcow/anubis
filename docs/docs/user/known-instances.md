@@ -14,7 +14,6 @@ This page contains a non-exhaustive list with all websites using Anubis.
 - https://bugs.winehq.org/
 - https://svnweb.freebsd.org/
 - https://trac.ffmpeg.org/
-- https://git.sr.ht/
 - https://xeiaso.net/
 - https://source.puri.sm/
 - https://git.enlightenment.org/
@@ -29,8 +28,32 @@ This page contains a non-exhaustive list with all websites using Anubis.
 - https://wiki.archlinux.org/
 - https://git.devuan.org/
 - https://hydra.nixos.org/
-- https://hydra.nixos.org/
 - https://codeberg.org/
+- https://www.cfaarchive.org/
+- https://gitlab.freedesktop.org/
+- https://bugzilla.proxmox.com
+- https://hofstede.io/
+- https://www.indiemag.fr/
+- https://reddit.nerdvpn.de/
+- <details>
+  <summary>FreeCAD</summary>
+  - https://forum.freecad.org/
+  - https://wiki.freecad.org/
+  </details>
+- <details>
+  <summary>ScummVM</summary>
+  - https://forums.scummvm.org/
+  - https://wiki.scummvm.org/
+  </details>
+- <details>
+  <summary>Sourceware</summary>
+  - https://sourceware.org/cgit
+  - https://sourceware.org/glibc/wiki
+  - https://builder.sourceware.org/testruns/
+  - https://patchwork.sourceware.org/
+  - https://gcc.gnu.org/bugzilla/
+  - https://gcc.gnu.org/cgit
+  </details>
 - <details>
   <summary>The United Nations</summary>
   - https://policytoolbox.iiep.unesco.org/

@@ -23,22 +23,21 @@ import (
 )
 
 type Options struct {
-	Next            http.Handler
-	Policy          *policy.ParsedConfig
-	RedirectDomains []string
-	ServeRobotsTXT  bool
-	PrivateKey      ed25519.PrivateKey
-
-	CookieDomain      string
-	CookieName        string
-	CookiePartitioned bool
-
-	OGPassthrough bool
-	OGTimeToLive  time.Duration
-	Target        string
-
-	WebmasterEmail string
-	BasePrefix     string
+	Next                 http.Handler
+	Policy               *policy.ParsedConfig
+	Target               string
+	CookieDomain         string
+	CookieName           string
+	BasePrefix           string
+	WebmasterEmail       string
+	RedirectDomains      []string
+	PrivateKey           ed25519.PrivateKey
+	CookieExpiration     time.Duration
+	OGTimeToLive         time.Duration
+	OGCacheConsidersHost bool
+	OGPassthrough        bool
+	CookiePartitioned    bool
+	ServeRobotsTXT       bool
 }
 
 func LoadPoliciesOrDefault(fname string, defaultDifficulty int) (*policy.ParsedConfig, error) {
@@ -82,6 +81,12 @@ func New(opts Options) (*Server, error) {
 
 	anubis.BasePrefix = opts.BasePrefix
 
+	cookieName := anubis.CookieName
+
+	if opts.CookieDomain != "" {
+		cookieName = anubis.WithDomainCookieName + opts.CookieDomain
+	}
+
 	result := &Server{
 		next:       opts.Next,
 		priv:       opts.PrivateKey,
@@ -89,7 +94,8 @@ func New(opts Options) (*Server, error) {
 		policy:     opts.Policy,
 		opts:       opts,
 		DNSBLCache: decaymap.New[string, dnsbl.DroneBLResponse](),
-		OGTags:     ogtags.NewOGTagCache(opts.Target, opts.OGPassthrough, opts.OGTimeToLive),
+		OGTags:     ogtags.NewOGTagCache(opts.Target, opts.OGPassthrough, opts.OGTimeToLive, opts.OGCacheConsidersHost),
+		cookieName: cookieName,
 	}
 
 	mux := http.NewServeMux()

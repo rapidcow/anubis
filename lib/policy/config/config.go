@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"net"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -28,6 +29,7 @@ var (
 	ErrInvalidImportStatement            = errors.New("config.ImportStatement: invalid source file")
 	ErrCantSetBotAndImportValuesAtOnce   = errors.New("config.BotOrImport: can't set bot rules and import values at the same time")
 	ErrMustSetBotOrImportRules           = errors.New("config.BotOrImport: rule definition is invalid, you must set either bot rules or an import statement, not both")
+	ErrStatusCodeNotValid                = errors.New("config.StatusCode: status code not valid, must be between 100 and 599")
 )
 
 type Rule string
@@ -49,13 +51,14 @@ const (
 )
 
 type BotConfig struct {
-	Name           string            `json:"name"`
 	UserAgentRegex *string           `json:"user_agent_regex"`
 	PathRegex      *string           `json:"path_regex"`
 	HeadersRegex   map[string]string `json:"headers_regex"`
+	Expression     *ExpressionOrList `json:"expression"`
+	Challenge      *ChallengeRules   `json:"challenge,omitempty"`
+	Name           string            `json:"name"`
 	Action         Rule              `json:"action"`
 	RemoteAddr     []string          `json:"remote_addresses"`
-	Challenge      *ChallengeRules   `json:"challenge,omitempty"`
 }
 
 func (b BotConfig) Zero() bool {
@@ -83,7 +86,12 @@ func (b BotConfig) Valid() error {
 		errs = append(errs, ErrBotMustHaveName)
 	}
 
-	if b.UserAgentRegex == nil && b.PathRegex == nil && len(b.RemoteAddr) == 0 && len(b.HeadersRegex) == 0 {
+	allFieldsEmpty := b.UserAgentRegex == nil &&
+		b.PathRegex == nil &&
+		len(b.RemoteAddr) == 0 &&
+		len(b.HeadersRegex) == 0
+
+	if allFieldsEmpty && b.Expression == nil {
 		errs = append(errs, ErrBotMustHaveUserAgentOrPath)
 	}
 
@@ -135,6 +143,12 @@ func (b BotConfig) Valid() error {
 		}
 	}
 
+	if b.Expression != nil {
+		if err := b.Expression.Valid(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	switch b.Action {
 	case RuleAllow, RuleBenchmark, RuleChallenge, RuleDeny:
 		// okay
@@ -156,9 +170,9 @@ func (b BotConfig) Valid() error {
 }
 
 type ChallengeRules struct {
+	Algorithm  Algorithm `json:"algorithm"`
 	Difficulty int       `json:"difficulty"`
 	ReportAs   int       `json:"report_as"`
-	Algorithm  Algorithm `json:"algorithm"`
 }
 
 var (
@@ -210,21 +224,30 @@ func (is *ImportStatement) open() (fs.File, error) {
 func (is *ImportStatement) load() error {
 	fin, err := is.open()
 	if err != nil {
-		return fmt.Errorf("can't open %s: %w", is.Import, err)
+		return fmt.Errorf("%w: %s: %w", ErrInvalidImportStatement, is.Import, err)
 	}
 	defer fin.Close()
 
+	var imported []BotOrImport
 	var result []BotConfig
 
-	if err := yaml.NewYAMLToJSONDecoder(fin).Decode(&result); err != nil {
+	if err := yaml.NewYAMLToJSONDecoder(fin).Decode(&imported); err != nil {
 		return fmt.Errorf("can't parse %s: %w", is.Import, err)
 	}
 
 	var errs []error
 
-	for _, b := range result {
+	for _, b := range imported {
 		if err := b.Valid(); err != nil {
 			errs = append(errs, err)
+		}
+
+		if b.ImportStatement != nil {
+			result = append(result, b.ImportStatement.Bots...)
+		}
+
+		if b.BotConfig != nil {
+			result = append(result, *b.BotConfig)
 		}
 	}
 
@@ -262,9 +285,33 @@ func (boi *BotOrImport) Valid() error {
 	return ErrMustSetBotOrImportRules
 }
 
+type StatusCodes struct {
+	Challenge int `json:"CHALLENGE"`
+	Deny      int `json:"DENY"`
+}
+
+func (sc StatusCodes) Valid() error {
+	var errs []error
+
+	if sc.Challenge == 0 || (sc.Challenge < 100 && sc.Challenge >= 599) {
+		errs = append(errs, fmt.Errorf("%w: challenge is %d", ErrStatusCodeNotValid, sc.Challenge))
+	}
+
+	if sc.Deny == 0 || (sc.Deny < 100 && sc.Deny >= 599) {
+		errs = append(errs, fmt.Errorf("%w: deny is %d", ErrStatusCodeNotValid, sc.Deny))
+	}
+
+	if len(errs) != 0 {
+		return fmt.Errorf("status codes not valid:\n%w", errors.Join(errs...))
+	}
+
+	return nil
+}
+
 type fileConfig struct {
-	Bots  []BotOrImport `json:"bots"`
-	DNSBL bool          `json:"dnsbl"`
+	Bots        []BotOrImport `json:"bots"`
+	DNSBL       bool          `json:"dnsbl"`
+	StatusCodes StatusCodes   `json:"status_codes"`
 }
 
 func (c fileConfig) Valid() error {
@@ -280,6 +327,10 @@ func (c fileConfig) Valid() error {
 		}
 	}
 
+	if err := c.StatusCodes.Valid(); err != nil {
+		errs = append(errs, err)
+	}
+
 	if len(errs) != 0 {
 		return fmt.Errorf("config is not valid:\n%w", errors.Join(errs...))
 	}
@@ -289,6 +340,10 @@ func (c fileConfig) Valid() error {
 
 func Load(fin io.Reader, fname string) (*Config, error) {
 	var c fileConfig
+	c.StatusCodes = StatusCodes{
+		Challenge: http.StatusOK,
+		Deny:      http.StatusOK,
+	}
 	if err := yaml.NewYAMLToJSONDecoder(fin).Decode(&c); err != nil {
 		return nil, fmt.Errorf("can't parse policy config YAML %s: %w", fname, err)
 	}
@@ -298,7 +353,8 @@ func Load(fin io.Reader, fname string) (*Config, error) {
 	}
 
 	result := &Config{
-		DNSBL: c.DNSBL,
+		DNSBL:       c.DNSBL,
+		StatusCodes: c.StatusCodes,
 	}
 
 	var validationErrs []error
@@ -331,8 +387,9 @@ func Load(fin io.Reader, fname string) (*Config, error) {
 }
 
 type Config struct {
-	Bots  []BotConfig
-	DNSBL bool
+	Bots        []BotConfig
+	DNSBL       bool
+	StatusCodes StatusCodes
 }
 
 func (c Config) Valid() error {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/tls"
 	"embed"
 	"encoding/hex"
 	"errors"
@@ -43,6 +44,7 @@ var (
 	bindNetwork              = flag.String("bind-network", "tcp", "network family to bind HTTP to, e.g. unix, tcp")
 	challengeDifficulty      = flag.Int("difficulty", anubis.DefaultDifficulty, "difficulty of the challenge")
 	cookieDomain             = flag.String("cookie-domain", "", "if set, the top-level domain that the Anubis cookie will be valid for")
+	cookieExpiration         = flag.Duration("cookie-expiration-time", anubis.CookieDefaultExpirationTime, "The amount of time the authorization cookie is valid for")
 	cookiePartitioned        = flag.Bool("cookie-partitioned", false, "if true, sets the partitioned flag on Anubis cookies, enabling CHIPS support")
 	ed25519PrivateKeyHex     = flag.String("ed25519-private-key-hex", "", "private key used to sign JWTs, if not set a random one will be assigned")
 	ed25519PrivateKeyHexFile = flag.String("ed25519-private-key-hex-file", "", "file name containing value for ed25519-private-key-hex")
@@ -54,11 +56,15 @@ var (
 	redirectDomains          = flag.String("redirect-domains", "", "list of domains separated by commas which anubis is allowed to redirect to. Leaving this unset allows any domain.")
 	slogLevel                = flag.String("slog-level", "INFO", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
 	target                   = flag.String("target", "http://localhost:3923", "target to reverse proxy to, set to an empty string to disable proxying when only using auth request")
+	targetSNI                = flag.String("target-sni", "", "if set, the value of the TLS handshake hostname when forwarding requests to the target")
+	targetHost               = flag.String("target-host", "", "if set, the value of the Host header when forwarding requests to the target")
+	targetInsecureSkipVerify = flag.Bool("target-insecure-skip-verify", false, "if true, skips TLS validation for the backend")
 	healthcheck              = flag.Bool("healthcheck", false, "run a health check against Anubis")
 	useRemoteAddress         = flag.Bool("use-remote-address", false, "read the client's IP address from the network request, useful for debugging and running Anubis on bare metal")
 	debugBenchmarkJS         = flag.Bool("debug-benchmark-js", false, "respond to every request with a challenge for benchmarking hashrate")
 	ogPassthrough            = flag.Bool("og-passthrough", false, "enable Open Graph tag passthrough")
 	ogTimeToLive             = flag.Duration("og-expiry-time", 24*time.Hour, "Open Graph tag cache expiration time")
+	ogCacheConsiderHost      = flag.Bool("og-cache-consider-host", false, "enable or disable the use of the host in the Open Graph tag cache")
 	extractResources         = flag.String("extract-resources", "", "if set, extract the static resources to the specified folder")
 	webmasterEmail           = flag.String("webmaster-email", "", "if set, displays webmaster's email on the reject page for appeals")
 )
@@ -131,7 +137,7 @@ func setupListener(network string, address string) (net.Listener, string) {
 	return listener, formattedAddress
 }
 
-func makeReverseProxy(target string) (http.Handler, error) {
+func makeReverseProxy(target string, targetSNI string, targetHost string, insecureSkipVerify bool) (http.Handler, error) {
 	targetUri, err := url.Parse(target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse target URL: %w", err)
@@ -153,8 +159,27 @@ func makeReverseProxy(target string) (http.Handler, error) {
 		transport.RegisterProtocol("unix", libanubis.UnixRoundTripper{Transport: transport})
 	}
 
+	if insecureSkipVerify || targetSNI != "" {
+		transport.TLSClientConfig = &tls.Config{}
+		if insecureSkipVerify {
+			slog.Warn("TARGET_INSECURE_SKIP_VERIFY is set to true, TLS certificate validation will not be performed", "target", target)
+			transport.TLSClientConfig.InsecureSkipVerify = true
+		}
+		if targetSNI != "" {
+			transport.TLSClientConfig.ServerName = targetSNI
+		}
+	}
+
 	rp := httputil.NewSingleHostReverseProxy(targetUri)
 	rp.Transport = transport
+
+	if targetHost != "" {
+		originalDirector := rp.Director
+		rp.Director = func(req *http.Request) {
+			originalDirector(req)
+			req.Host = targetHost
+		}
+	}
 
 	return rp, nil
 }
@@ -194,7 +219,7 @@ func main() {
 	// when using anubis via Systemd and environment variables, then it is not possible to set targe to an empty string but only to space
 	if strings.TrimSpace(*target) != "" {
 		var err error
-		rp, err = makeReverseProxy(*target)
+		rp, err = makeReverseProxy(*target, *targetSNI, *targetHost, *targetInsecureSkipVerify)
 		if err != nil {
 			log.Fatalf("can't make reverse proxy: %v", err)
 		}
@@ -205,16 +230,15 @@ func main() {
 		log.Fatalf("can't parse policy file: %v", err)
 	}
 
-	fmt.Println("Rule error IDs:")
+	ruleErrorIDs := make(map[string]string)
 	for _, rule := range policy.Bots {
 		if rule.Action != config.RuleDeny {
 			continue
 		}
 
 		hash := rule.Hash()
-		fmt.Printf("* %s: %s\n", rule.Name, hash)
+		ruleErrorIDs[rule.Name] = hash
 	}
-	fmt.Println()
 
 	// replace the bot policy rules with a single rule that always benchmarks
 	if *debugBenchmarkJS {
@@ -272,18 +296,20 @@ func main() {
 	}
 
 	s, err := libanubis.New(libanubis.Options{
-		BasePrefix:        *basePrefix,
-		Next:              rp,
-		Policy:            policy,
-		ServeRobotsTXT:    *robotsTxt,
-		PrivateKey:        priv,
-		CookieDomain:      *cookieDomain,
-		CookiePartitioned: *cookiePartitioned,
-		OGPassthrough:     *ogPassthrough,
-		OGTimeToLive:      *ogTimeToLive,
-		RedirectDomains:   redirectDomainsList,
-		Target:            *target,
-		WebmasterEmail:    *webmasterEmail,
+		BasePrefix:           *basePrefix,
+		Next:                 rp,
+		Policy:               policy,
+		ServeRobotsTXT:       *robotsTxt,
+		PrivateKey:           priv,
+		CookieDomain:         *cookieDomain,
+		CookieExpiration:     *cookieExpiration,
+		CookiePartitioned:    *cookiePartitioned,
+		OGPassthrough:        *ogPassthrough,
+		OGTimeToLive:         *ogTimeToLive,
+		RedirectDomains:      redirectDomainsList,
+		Target:               *target,
+		WebmasterEmail:       *webmasterEmail,
+		OGCacheConsidersHost: *ogCacheConsiderHost,
 	})
 	if err != nil {
 		log.Fatalf("can't construct libanubis.Server: %v", err)
@@ -306,7 +332,7 @@ func main() {
 	h = internal.XForwardedForToXRealIP(h)
 	h = internal.XForwardedForUpdate(h)
 
-	srv := http.Server{Handler: h}
+	srv := http.Server{Handler: h, ErrorLog: internal.GetFilteredHTTPLogger()}
 	listener, listenerUrl := setupListener(*bindNetwork, *bind)
 	slog.Info(
 		"listening",
@@ -320,6 +346,8 @@ func main() {
 		"og-passthrough", *ogPassthrough,
 		"og-expiry-time", *ogTimeToLive,
 		"base-prefix", *basePrefix,
+		"cookie-expiration-time", *cookieExpiration,
+		"rule-error-ids", ruleErrorIDs,
 	)
 
 	go func() {
@@ -343,7 +371,7 @@ func metricsServer(ctx context.Context, done func()) {
 	mux := http.NewServeMux()
 	mux.Handle(anubis.BasePrefix+"/metrics", promhttp.Handler())
 
-	srv := http.Server{Handler: mux}
+	srv := http.Server{Handler: mux, ErrorLog: internal.GetFilteredHTTPLogger()}
 	listener, metricsUrl := setupListener(*metricsBindNetwork, *metricsBind)
 	slog.Debug("listening for metrics", "url", metricsUrl)
 

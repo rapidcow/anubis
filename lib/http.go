@@ -1,26 +1,41 @@
 package lib
 
 import (
+	"math/rand"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
+	"github.com/TecharoHQ/anubis"
 	"github.com/TecharoHQ/anubis/internal"
 	"github.com/TecharoHQ/anubis/lib/policy"
 	"github.com/TecharoHQ/anubis/web"
 	"github.com/a-h/templ"
-
-	"github.com/TecharoHQ/anubis"
 )
 
-func (s *Server) ClearCookie(w http.ResponseWriter) {
+func (s *Server) SetCookie(w http.ResponseWriter, name, value, path string) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     anubis.CookieName,
-		Value:    "",
-		Expires:  time.Now().Add(-1 * time.Hour),
-		MaxAge:   -1,
-		SameSite: http.SameSiteLaxMode,
-		Domain:   s.opts.CookieDomain,
+		Name:        name,
+		Value:       value,
+		Expires:     time.Now().Add(s.opts.CookieExpiration),
+		SameSite:    http.SameSiteLaxMode,
+		Domain:      s.opts.CookieDomain,
+		Partitioned: s.opts.CookiePartitioned,
+		Path:        path,
+	})
+}
+
+func (s *Server) ClearCookie(w http.ResponseWriter, name, path string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:        name,
+		Value:       "",
+		MaxAge:      -1,
+		Expires:     time.Now().Add(-1 * time.Minute),
+		SameSite:    http.SameSiteLaxMode,
+		Partitioned: s.opts.CookiePartitioned,
+		Domain:      s.opts.CookieDomain,
+		Path:        path,
 	})
 }
 
@@ -40,6 +55,10 @@ func (t UnixRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.Transport.RoundTrip(req)
 }
 
+func randomChance(n int) bool {
+	return rand.Intn(n) == 0
+}
+
 func (s *Server) RenderIndex(w http.ResponseWriter, r *http.Request, rule *policy.Bot, returnHTTPStatusOnly bool) {
 	if returnHTTPStatusOnly {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -49,16 +68,29 @@ func (s *Server) RenderIndex(w http.ResponseWriter, r *http.Request, rule *polic
 
 	lg := internal.GetRequestLogger(r)
 
+	if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && randomChance(64) {
+		lg.Error("client was given a challenge but does not in fact support gzip compression")
+		s.respondWithError(w, r, "Client Error: Please ensure your browser is up to date and try again later.")
+	}
+
+	challengesIssued.WithLabelValues("embedded").Add(1)
 	challenge := s.challengeFor(r, rule.Challenge.Difficulty)
 
 	var ogTags map[string]string = nil
 	if s.opts.OGPassthrough {
 		var err error
-		ogTags, err = s.OGTags.GetOGTags(r.URL)
+		ogTags, err = s.OGTags.GetOGTags(r.URL, r.Host)
 		if err != nil {
 			lg.Error("failed to get OG tags", "err", err)
 		}
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:    anubis.TestCookieName,
+		Value:   challenge,
+		Expires: time.Now().Add(30 * time.Minute),
+		Path:    "/",
+	})
 
 	component, err := web.BaseWithChallengeAndOGTags("Making sure you're not a bot!", web.Index(), challenge, rule.Challenge, ogTags)
 	if err != nil {
@@ -67,7 +99,10 @@ func (s *Server) RenderIndex(w http.ResponseWriter, r *http.Request, rule *polic
 		return
 	}
 
-	handler := internal.NoStoreCache(templ.Handler(component))
+	handler := internal.GzipMiddleware(1, internal.NoStoreCache(templ.Handler(
+		component,
+		templ.WithStatus(s.opts.Policy.StatusCodes.Challenge),
+	)))
 	handler.ServeHTTP(w, r)
 }
 
