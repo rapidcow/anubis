@@ -1,0 +1,22 @@
+# Copied from anubis.git:run
+# example usage: systemctl [action] anubis@nginx
+[Unit]
+Description="Anubis HTTP defense proxy (instance %i)"
+
+[Service]
+ExecStart=/usr/local/bin/anubis
+Restart=always
+RestartSec=30s
+EnvironmentFile=/usr/local/etc/anubis/%i.env
+LimitNOFILE=infinity
+# Don't! I'll give you a user....
+#DynamicUser=yes
+User=anubis
+CacheDirectory=anubis/%i
+CacheDirectoryMode=0755
+StateDirectory=anubis/%i
+StateDirectoryMode=0755
+ReadWritePaths=/run/anubis
+
+[Install]
+WantedBy=multi-user.target

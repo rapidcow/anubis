@@ -1,0 +1,32 @@
+This is stuff specific to www.rapidcow.org and friends
+
+(In hopes of confusing less people, our branch lives in rc/main) 
+
+= What to do next
+
+We're on an unstable v1.18.0 pre-release build so uh
+
+git fetch origin
+git merge v1.18.0
+
+that'll do
+
+Then read INSTALL (it's a symlink to building-anubis.md, source of
+the HTML document at anubis.techaro.lol/docs/developer/building-anubis/)
+
+Then install -m755 var/anibus /usr/local/bin
+(I almost forgot the executable bits -- very important)
+
+reload is NOT a thing!!!! do systemctl restart
+(also it's probably a good idea to enable anubis@nginx)
+
+= systemd Linux
+
+/run/anubis/ should exist!  Don't let rebooting eat it...
+
+mkdir -m 755 /run/anubis/
+chown anubis:anubis /run/anubis/
+
+Make sure the anubis user can make a unix socket there
+
+sudo -u anubis nc -U /run/anubis/foo.sock -l
