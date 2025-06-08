@@ -4,18 +4,31 @@ This is stuff specific to www.rapidcow.org and friends
 
 = What to do next
 
-We're on an unstable v1.18.0 pre-release build so uh
+We're on v1.19.1?????
 
 git fetch origin
-git merge v1.18.0
+git merge v??????
 
-that'll do
+do something like that idk
 
 Then read INSTALL (it's a symlink to building-anubis.md, source of
 the HTML document at anubis.techaro.lol/docs/developer/building-anubis/)
 
+     => note: due to the way make rules there unconditionally run
+        note: each other, you might as well run the ultimate target
+        note: (it's called build or something i forgot)
+
+     => note^2: there seems to be this new esbuild(1) command dependency?
+        note^2: install it with `apt[-get] install esbuild'.
+        note^2: edit: actually, don't.  these pesky fellas live in Node.js
+	note^2: and so it's better to keep them out of /usr/bin.
+	note^2: solved it by delegating execution to npx(1).
+
 Then install -m755 var/anibus /usr/local/bin
 (I almost forgot the executable bits -- very important)
+
+    [[[ though you can you can do all of this with Make rules
+       (just stay in this directory in that case; don't leave!) ]]]
 
 reload is NOT a thing!!!! do systemctl restart
 (also it's probably a good idea to enable anubis@nginx)
@@ -30,3 +43,8 @@ chown anubis:anubis /run/anubis/
 Make sure the anubis user can make a unix socket there
 
 sudo -u anubis nc -U /run/anubis/foo.sock -l
+
+    [[[ thankfully this is a normal enough question to get asked
+        9 years ago: https://serverfault.com/questions/779634
+        /create-a-directory-under-var-run-at-boot/779648#779648
+        I'll give RuntimeDirectory a shot, hold on ]]]
