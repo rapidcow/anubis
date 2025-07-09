@@ -1,0 +1,10 @@
+# usage: systemctl --user [action] anubis-local
+[Unit]
+Description="Anubis HTTP defense proxy (local instance)"
+
+[Service]
+ExecStart=~/.local/bin/anubis
+EnvironmentFile=~/.local/etc/anubis/local.env
+
+[Install]
+WantedBy=multi-user.target

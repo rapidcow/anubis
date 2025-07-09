@@ -1,0 +1,2 @@
+#!/bin/sh
+exec mitmproxy -s scripts/proxy.py --mode reverse:http://localhost:8080 --listen-port 8081
