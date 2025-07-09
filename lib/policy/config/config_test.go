@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/TecharoHQ/anubis/data"
-	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func p[V any](v V) *V { return &v }
@@ -131,20 +130,6 @@ func TestBotValid(t *testing.T) {
 			err: ErrChallengeDifficultyTooHigh,
 		},
 		{
-			name: "challenge wrong algorithm",
-			bot: BotConfig{
-				Name:      "mozilla-ua",
-				Action:    RuleChallenge,
-				PathRegex: p("Mozilla"),
-				Challenge: &ChallengeRules{
-					Difficulty: 420,
-					ReportAs:   4,
-					Algorithm:  "high quality rips",
-				},
-			},
-			err: ErrChallengeRuleHasWrongAlgorithm,
-		},
-		{
 			name: "invalid cidr range",
 			bot: BotConfig{
 				Name:       "mozilla-ua",
@@ -181,6 +166,25 @@ func TestBotValid(t *testing.T) {
 				RemoteAddr: []string{"0.0.0.0/0"},
 			},
 			err: nil,
+		},
+		{
+			name: "weight rule without weight",
+			bot: BotConfig{
+				Name:           "weight-adjust-if-mozilla",
+				Action:         RuleWeigh,
+				UserAgentRegex: p("Mozilla"),
+			},
+		},
+		{
+			name: "weight rule with weight adjust",
+			bot: BotConfig{
+				Name:           "weight-adjust-if-mozilla",
+				Action:         RuleWeigh,
+				UserAgentRegex: p("Mozilla"),
+				Weight: &Weight{
+					Adjust: 5,
+				},
+			},
 		},
 	}
 
@@ -308,12 +312,8 @@ func TestConfigValidBad(t *testing.T) {
 			}
 			defer fin.Close()
 
-			var c fileConfig
-			if err := yaml.NewYAMLToJSONDecoder(fin).Decode(&c); err != nil {
-				t.Fatalf("can't decode file: %v", err)
-			}
-
-			if err := c.Valid(); err == nil {
+			_, err = Load(fin, filepath.Join("testdata", "bad", st.Name()))
+			if err == nil {
 				t.Fatal("validation should have failed but didn't somehow")
 			} else {
 				t.Log(err)
@@ -361,7 +361,7 @@ func TestBotConfigZero(t *testing.T) {
 	b.Challenge = &ChallengeRules{
 		Difficulty: 4,
 		ReportAs:   4,
-		Algorithm:  AlgorithmFast,
+		Algorithm:  DefaultAlgorithm,
 	}
 	if b.Zero() {
 		t.Error("BotConfig with challenge rules is zero value")
