@@ -137,7 +137,7 @@ func base(title string, body templ.Component, impressum *config.Impressum, chall
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<footer><center><p>Protected by <a href=\"https://github.com/TecharoHQ/anubis\">Anubis</a> from <a href=\"https://techaro.lol\">Techaro</a>. Made with ❤️ in 🇨🇦.</p><p>Mascot design by <a href=\"https://bsky.app/profile/celphase.bsky.social\">CELPHASE</a>.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<footer><center><p>Protected by <a rel=\"noopener noreferrer\" href=\"https://github.com/TecharoHQ/anubis\">Anubis</a> from <a rel=\"noopener noreferrer\" href=\"https://techaro.lol/\">Techaro</a>. Made with ❤️ in 🇨🇦.</p><p>Mascot design by <a rel=\"noopener noreferrer\" href=\"https://bsky.app/profile/celphase.bsky.social\">CELPHASE</a>.</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -157,7 +157,7 @@ func base(title string, body templ.Component, impressum *config.Impressum, chall
 			var templ_7745c5c3_Var7 templ.SafeURL
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("%simprint", anubis.APIPrefix)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 81, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 85, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -204,7 +204,7 @@ func index() templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(anubis.BasePrefix + "/.within.website/x/cmd/anubis/static/img/pensive.webp?cacheBuster=" + anubis.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 92, Col: 165}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 96, Col: 165}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -217,7 +217,7 @@ func index() templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(anubis.BasePrefix + "/.within.website/x/cmd/anubis/static/img/happy.webp?cacheBuster=" + anubis.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 93, Col: 174}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 97, Col: 174}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -230,26 +230,26 @@ func index() templ.Component {
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(anubis.BasePrefix + "/.within.website/x/cmd/anubis/static/js/main.mjs?cacheBuster=" + anubis.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 95, Col: 136}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 99, Col: 136}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\"></script><div id=\"progress\" role=\"progressbar\" aria-labelledby=\"status\"><div class=\"bar-inner\"></div></div><details><summary>Why am I seeing this?</summary><p>You are seeing this because the administrator of this website has set up <a href=\"https://github.com/TecharoHQ/anubis\">Anubis</a> to protect the server against the scourge of <a href=\"https://thelibre.news/foss-infrastructure-is-under-attack-by-ai-companies/\">AI companies aggressively scraping websites</a>. This can and does cause downtime for the websites, which makes their resources inaccessible for everyone.</p><p>Anubis is a compromise. Anubis uses a <a href=\"https://anubis.techaro.lol/docs/design/why-proof-of-work\">Proof-of-Work</a> scheme in the vein of <a href=\"https://en.wikipedia.org/wiki/Hashcash\">Hashcash</a>, a proposed proof-of-work scheme for reducing email spam. The idea is that at individual scales the additional load is ignorable, but at mass scraper levels it adds up and makes scraping much more expensive.</p><p>Ultimately, this is a hack whose real purpose is to give a \"good enough\" placeholder solution so that more time can be spent on fingerprinting and identifying headless browsers (EG: via how they do font rendering) so that the challenge proof of work page doesn't need to be presented to users that are much more likely to be legitimate.</p><p>Please note that Anubis requires the use of modern JavaScript features that plugins like <a href=\"https://jshelter.org/\">JShelter</a> will disable. Please disable JShelter or other such plugins for this domain.</p><p>This website is running Anubis version <code>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\"></script><div id=\"progress\" role=\"progressbar\" aria-labelledby=\"status\"><div class=\"bar-inner\"></div></div><details><summary>Why am I seeing this?</summary><p>You are seeing this because the webmaster (i.e.&nbsp;Ethan!) has set up <a rel=\"noopener noreferrer\" href=\"https://github.com/TecharoHQ/anubis\">Anubis</a> to protect the server against the scourge of <a rel=\"noopener noreferrer\" href=\"https://thelibre.news/foss-infrastructure-is-under-attack-by-ai-companies/\">AI companies aggressively scraping websites</a>. This can and does cause downtime for the websites, which makes their resources inaccessible for everyone.</p><p>Anubis is a compromise. Anubis uses a <a rel=\"noopener noreferrer\" href=\"https://anubis.techaro.lol/docs/design/why-proof-of-work\">Proof-of-Work</a> scheme in the vein of <a rel=\"noopener noreferrer\" href=\"https://en.wikipedia.org/wiki/Hashcash\">Hashcash</a>, a proposed proof-of-work scheme for reducing email spam. The idea is that at individual scales the additional load is ignorable, but at mass scraper levels it adds up and makes scraping much more expensive.</p><p>Ultimately, this is a hack whose real purpose is to give a \"good enough\" placeholder solution so that more time can be spent on fingerprinting and identifying headless browsers (EG: via how they do font rendering) so that the challenge proof of work page doesn't need to be presented to users that are much more likely to be legitimate.</p><p>Please note that Anubis requires the use of modern JavaScript features that plugins like <a rel=\"noopener noreferrer\" href=\"https://jshelter.org/\">JShelter</a> will disable. Please disable JShelter or other such plugins for this domain.</p><p>This website is running Anubis version <code>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(anubis.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 131, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 140, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</code>.</p></details><noscript><p>Sadly, you must enable JavaScript to get past this challenge. This is required because AI companies have changed the social contract around how website hosting works. A no-JS solution is a work-in-progress.</p></noscript><div id=\"testarea\"></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</code>.</p><p>(Ethan here!  The above notice is written by people who made Anubis. This is actually a modified version of the upstream source code <a rel=\"noopener noreferrer\" href=\"https://github.com/TecharoHQ/anubis\">TecharoHQ/anubis</a>, which can be found in my fork <a rel=\"noopener noreferrer\" href=\"https://github.com/rapidcow/anubis\">rapidcow/anubis</a>.  All of this is experimental as of late, so let me know how I&rsquo;m doing by emailing <a href=\"mailto:webmaster@rapidcow.org\">webmaster@rapidcow.org</a>. Otherwise have a great day, night, wherever you are in the world!)</p></details><noscript><p>Sadly, you must enable JavaScript to get past this challenge. This is required because AI companies have changed the social contract around how website hosting works. A no-JS solution is a work-in-progress.</p></noscript><div id=\"testarea\"></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -285,7 +285,7 @@ func errorPage(message string, mail string) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(anubis.BasePrefix + "/.within.website/x/cmd/anubis/static/img/reject.webp?cacheBuster=" + anubis.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 146, Col: 181}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 170, Col: 181}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -298,7 +298,7 @@ func errorPage(message string, mail string) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 147, Col: 14}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 171, Col: 14}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -316,7 +316,7 @@ func errorPage(message string, mail string) templ.Component {
 			var templ_7745c5c3_Var16 templ.SafeURL
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinURLErrs("mailto:" + templ.SafeURL(mail))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 152, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 176, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -329,7 +329,7 @@ func errorPage(message string, mail string) templ.Component {
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(mail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 153, Col: 11}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 177, Col: 11}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -382,7 +382,7 @@ func StaticHappy() templ.Component {
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs("/.within.website/x/cmd/anubis/static/img/happy.webp?cacheBuster=" +
 			anubis.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 168, Col: 18}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 192, Col: 18}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -424,7 +424,7 @@ func bench() templ.Component {
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(anubis.BasePrefix + "/.within.website/x/cmd/anubis/static/img/pensive.webp?cacheBuster=" + anubis.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 197, Col: 166}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 221, Col: 166}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -437,7 +437,7 @@ func bench() templ.Component {
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(anubis.BasePrefix + "/.within.website/x/cmd/anubis/static/js/bench.mjs?cacheBuster=" + anubis.Version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 199, Col: 138}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `index.templ`, Line: 223, Col: 138}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
