@@ -13,6 +13,43 @@ const u = (url = "", params = {}) => {
   return result.toString();
 };
 
+// from cowsay!!!
+const cows = {
+  pensive: [
+    "+----" +  "---------" +  "--------------+",
+    "|    " +  "         " +  "              |",
+    "|    " +  "         " +  "^__^          |",
+    "|   %" +  "  ______/" +  "(>>)  hmmmm   |",
+    "|   \\" + "/(      /" +  "(__)   ...    |",
+    "|    "  + " |/-----|\\" + "_/           |",
+    "|    "  + " ||     | "  + "             |",
+    "|    "  + "          "  + "             |",
+    "+----"  + "----------"  + "-------------+",
+  ],
+  happy: [
+    "+----" +  "---------" +  "--------------+",
+    "|    " +  "         " +  "              |",
+    "|    " +  "         " +  "^__^          |",
+    "|   %" +  "  ______/" +  "(^^)  good    |",
+    "|   \\" + "/(      /" +  "(__)  job!    |",
+    "|    "  + " |/-----|\\" + "_b           |",
+    "|    "  + " ||     | "  + "             |",
+    "|    "  + "          "  + "             |",
+    "+----"  + "----------"  + "-------------+",
+  ],
+  reject: [
+    "+-------------" +    "--------------+",
+    "|             " +    "              |",
+    "|             " +    "^__^          |",
+    "|      ______/" +    "(xx)  nuh     |",
+    "|    /(      /" +    "(__)  uh!!!   |",
+    "|   % //_____\\\\ "  + "U           |",
+    "|    //       \\\\"  + "            |",
+    "|             " +    "              |",
+    "+-------------" +    "--------------+",
+  ].join("\n"),
+};
+
 const imageURL = (mood, cacheBuster, basePrefix) =>
   u(`${basePrefix}/.within.website/x/cmd/anubis/static/img/${mood}.webp`, {
     cacheBuster,
@@ -38,7 +75,7 @@ const dependencies = [
 
 (async () => {
   const status = document.getElementById("status");
-  const image = document.getElementById("image");
+  const image = document.getElementById("image"); // is in fact a <pre> tag!
   const title = document.getElementById("title");
   const progress = document.getElementById("progress");
   const anubisVersion = JSON.parse(
@@ -58,18 +95,21 @@ const dependencies = [
     });
   }
 
-  const ohNoes = ({ titleMsg, statusMsg, imageSrc }) => {
+  const show = ({ titleMsg, statusMsg, verdict }) => {
     title.innerHTML = titleMsg;
     status.innerHTML = statusMsg;
-    image.src = imageSrc;
+    // Remember our image is actually <pre>formatted text...
+    // image.src = imageURL(verdict, anubisVersion, basePrefix);
+    image.content = cows[verdict];
+    image.className = verdict;
     progress.style.display = "none";
   };
 
   if (!window.isSecureContext) {
-    ohNoes({
+    show({
       titleMsg: "Your context is not secure!",
       statusMsg: `Try connecting over HTTPS or let the admin know to set up HTTPS. For more information, see <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts#when_is_a_context_considered_secure">MDN</a>.`,
-      imageSrc: imageURL("reject", anubisVersion, basePrefix),
+      verdict: "reject",
     });
     return;
   }
@@ -78,10 +118,10 @@ const dependencies = [
 
   for (const { value, name, msg } of dependencies) {
     if (!value) {
-      ohNoes({
+      show({
         titleMsg: `Missing feature ${name}`,
         statusMsg: msg,
-        imageSrc: imageURL("reject", anubisVersion, basePrefix),
+        verdict: "reject",
       });
       return;
     }
@@ -93,10 +133,10 @@ const dependencies = [
 
   const process = algorithms[rules.algorithm];
   if (!process) {
-    ohNoes({
+    show({
       titleMsg: "Challenge error!",
       statusMsg: `Failed to resolve check algorithm. You may want to reload the page.`,
-      imageSrc: imageURL("reject", anubisVersion, basePrefix),
+      verdict: "reject",
     });
     return;
   }
@@ -152,10 +192,11 @@ const dependencies = [
     const t1 = Date.now();
     console.log({ hash, nonce });
 
-    title.innerHTML = "Success!";
-    status.innerHTML = `Done! Took ${t1 - t0}ms, ${nonce} iterations`;
-    image.src = imageURL("happy", anubisVersion, basePrefix);
-    progress.style.display = "none";
+    show({
+      titleMsg: "Success!",
+      statusMsg: `Done! Took ${t1 - t0}ms, ${nonce} iterations`,
+      verdict: "happy",
+    });
 
     if (userReadDetails) {
       const container = document.getElementById("progress");
@@ -204,10 +245,10 @@ const dependencies = [
       }, 250);
     }
   } catch (err) {
-    ohNoes({
+    show({
       titleMsg: "Calculation error!",
       statusMsg: `Failed to calculate challenge: ${err.message}`,
-      imageSrc: imageURL("reject", anubisVersion, basePrefix),
+      verdict: "reject",
     });
   }
 })();

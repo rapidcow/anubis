@@ -17,53 +17,24 @@ type CELChecker struct {
 }
 
 func NewCELChecker(cfg *config.ExpressionOrList) (*CELChecker, error) {
-	env, err := expressions.NewEnvironment()
+	env, err := expressions.BotEnvironment()
 	if err != nil {
 		return nil, err
 	}
 
-	var src string
-	var ast *cel.Ast
-
-	if cfg.Expression != "" {
-		src = cfg.Expression
-		var iss *cel.Issues
-		intermediate, iss := env.Compile(src)
-		if iss != nil {
-			return nil, iss.Err()
-		}
-
-		ast, iss = env.Check(intermediate)
-		if iss != nil {
-			return nil, iss.Err()
-		}
-	}
-
-	if len(cfg.All) != 0 {
-		ast, err = expressions.Join(env, expressions.JoinAnd, cfg.All...)
-	}
-
-	if len(cfg.Any) != 0 {
-		ast, err = expressions.Join(env, expressions.JoinOr, cfg.Any...)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	program, err := expressions.Compile(env, ast)
+	program, err := expressions.Compile(env, cfg.String())
 	if err != nil {
 		return nil, fmt.Errorf("can't compile CEL program: %w", err)
 	}
 
 	return &CELChecker{
-		src:     src,
+		src:     cfg.String(),
 		program: program,
 	}, nil
 }
 
 func (cc *CELChecker) Hash() string {
-	return internal.SHA256sum(cc.src)
+	return internal.FastHash(cc.src)
 }
 
 func (cc *CELChecker) Check(r *http.Request) (bool, error) {

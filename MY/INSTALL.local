@@ -1,0 +1,5 @@
+local install guide:
+
+$ scripts/install/local
+$ systemctl --user start anubis-local # listens on port 8080
+$ ./runprxy   # listens on port 8081

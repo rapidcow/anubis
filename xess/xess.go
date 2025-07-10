@@ -12,10 +12,8 @@ import (
 	"github.com/TecharoHQ/anubis/internal"
 )
 
-//go:generate go tool github.com/a-h/templ/cmd/templ generate
-
 var (
-	//go:embed *.css static
+	//go:embed *.css
 	Static embed.FS
 
 	URL = "/.within.website/x/xess/xess.css"
