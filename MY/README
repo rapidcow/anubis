@@ -2,14 +2,18 @@ This is stuff specific to www.rapidcow.org and friends
 
 (In hopes of confusing less people, our branch lives in rc/main) 
 
-= What to do next
+We're on v1.20.0!
 
-We're on v1.19.1?????
+= What to do next
 
 git fetch origin
 git merge v??????
 
 do something like that idk
+
+but most importantly...
+
+cd MY  # obviously!
 
 Then read INSTALL (it's a symlink to building-anubis.md, source of
 the HTML document at anubis.techaro.lol/docs/developer/building-anubis/)
