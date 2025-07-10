@@ -197,7 +197,7 @@ func index() templ.Component {
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"centered-div\"><figure class=\"cow-image\"><pre id=\"image\" class=\"pensive\">+---------------------------+ |                           | |             ^__^          | |   %  ______/(&gt;&gt;)  hmmmm   | |   \\/(      /(__)   ...    | |     |/-----|\\_/           | |     ||     |              | |                           | +---------------------------+</pre></figure><p id=\"status\">Loading...</p><script async type=\"module\" src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"centered-div\"><figure class=\"cow-image\"><pre id=\"image\" class=\"pensive\">+---------------------------+<br>|                           |<br>|             ^__^          |<br>|   %  ______/(&gt;&gt;)  hmmmm   |<br>|   \\/(      /(__)   ...    |<br>|     |/-----|\\_/           |<br>|     ||     |              |<br>|                           |<br>+---------------------------+</pre></figure><p id=\"status\">Loading...</p><script async type=\"module\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
