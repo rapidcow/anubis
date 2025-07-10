@@ -4,6 +4,7 @@ systemd_prefix = ${prefix}/lib/systemd/system
 # alas, i am not sure if systemd looks at XDG_CONFIG_HOME...
 # systemd.unit(5) says ~/.config/systemd/user without any variables
 systemd_local_prefix = ${XDG_CONFIG_HOME}/systemd/user
+GO = /usr/bin/env go
 
 help:
 	@echo "= more Makefile for anubis"
@@ -30,8 +31,11 @@ ${prefix}/etc/anubis/local.env: etc/anubis/local.env
 	install -m644 etc/anubis/local.env $@
 
 ../var/anubis:
-	# Should run make build -> assets -> deps in that order
-	${MAKE} -C .. build
+	@# Should run make build -> assets -> deps in that order
+	${MAKE} -C .. assets
+	cd .. && $(GO) build -o ./var/anubis -ldflags "-X 'github.com/TecharoHQ/anubis.Version=$$(git describe --tags)'" ./cmd/anubis
+	cd .. && $(GO) build -o ./var/robots2policy -ldflags "-X 'github.com/TecharoHQ/anubis.Version=$$(git describe --tags)'" ./cmd/robots2policy
+	@echo "Anubis $$(git describe --tags) is now built to ./var/anubis"
 
 install-systemd: ${systemd_prefix}/anubis@.service
 install-systemd-local: ${systemd_local_prefix}/anubis-local.service
