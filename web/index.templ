@@ -71,11 +71,15 @@ templ base(title string, body templ.Component, impressum *config.Impressum, chal
 				<footer>
 					<center>
 						<p>
-							Protected by <a href="https://github.com/TecharoHQ/anubis">Anubis</a> from <a
-	href="https://techaro.lol"
+							Protected by <a rel="noopener noreferrer"
+                                                                        href="https://github.com/TecharoHQ/anubis">Anubis</a> from <a
+	rel="noopener noreferrer"
+	href="https://techaro.lol/"
 >Techaro</a>. Made with ❤️ in 🇨🇦.
 						</p>
-						<p>Mascot design by <a href="https://bsky.app/profile/celphase.bsky.social">CELPHASE</a>.</p>
+						<p>Mascot design by <a
+rel="noopener noreferrer"
+href="https://bsky.app/profile/celphase.bsky.social">CELPHASE</a>.</p>
 						if impressum != nil {
 							<p>@templ.Raw(impressum.Footer)
 -- <a href={ templ.SafeURL(fmt.Sprintf("%simprint", anubis.APIPrefix)) }>Imprint</a></p>
@@ -99,10 +103,12 @@ templ index() {
 		<details>
 			<summary>Why am I seeing this?</summary>
 			<p>
-				You are seeing this because the administrator of this website has set up <a
+				You are seeing this because the webmaster (i.e.&nbsp;Ethan!) has set up <a
+				rel="noopener noreferrer"
 	href="https://github.com/TecharoHQ/anubis"
 >Anubis</a> to protect the server against the scourge of
-				<a href="https://thelibre.news/foss-infrastructure-is-under-attack-by-ai-companies/">
+				<a rel="noopener noreferrer"
+					href="https://thelibre.news/foss-infrastructure-is-under-attack-by-ai-companies/">
 					AI companies
 					aggressively scraping websites
 				</a>. This can and does cause downtime for the websites, which makes their
@@ -110,9 +116,11 @@ templ index() {
 			</p>
 			<p>
 				Anubis is a compromise. Anubis uses a <a
+	rel="noopener noreferrer"
 	href="https://anubis.techaro.lol/docs/design/why-proof-of-work"
 >Proof-of-Work</a>
-				scheme in the vein of <a href="https://en.wikipedia.org/wiki/Hashcash">Hashcash</a>, a proposed
+				scheme in the vein of <a rel="noopener noreferrer"
+				href="https://en.wikipedia.org/wiki/Hashcash">Hashcash</a>, a proposed
 				proof-of-work scheme for reducing email spam. The idea is that at individual scales the additional load is
 				ignorable, but at mass scraper levels it adds up and makes scraping much more expensive.
 			</p>
@@ -124,11 +132,27 @@ templ index() {
 			</p>
 			<p>
 				Please note that Anubis requires the use of modern JavaScript features that plugins like <a
+	rel="noopener noreferrer"
 	href="https://jshelter.org/"
 >JShelter</a> will disable. Please disable JShelter or other such
 				plugins for this domain.
 			</p>
 			<p>This website is running Anubis version <code>{ anubis.Version }</code>.</p>
+			<p>
+(Ethan here!  The above notice is written by people who made Anubis.
+This is actually a modified version of the upstream source code
+<a
+rel="noopener noreferrer"
+href="https://github.com/TecharoHQ/anubis"
+>TecharoHQ/anubis</a>, which can be found in my fork
+<a
+rel="noopener noreferrer"
+href="https://github.com/rapidcow/anubis"
+>rapidcow/anubis</a>.  All of this is experimental as of late,
+so let me know how I&rsquo;m doing by emailing
+<a href="mailto:webmaster@rapidcow.org">webmaster@rapidcow.org</a>.
+Otherwise have a great day, night, wherever you are in the world!)
+			</p>
 		</details>
 		<noscript>
 			<p>
