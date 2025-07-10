@@ -252,7 +252,7 @@ func errorPage(message string, mail string) templ.Component {
 			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"centered-div\"><figure class=\"cow-image\"><pre id=\"image\" class=\"error\">+---------------------------+<br>|                           |<br>|             ^__^          |<br>|      ______/(66)  uh...   |<br>|    /(      /(__)  nope?   |<br>|   % |/-----||             |<br>|     ||     ||             |<br>|                           |<br>+---------------------------+</pre></figure><p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"centered-div\"><figure class=\"cow-image\"><pre id=\"image\" class=\"error\">+---------------------------+<br>|                           |<br>|             ^__^          |<br>|      ______/(66)  mmm...  |<br>|    /(      /(__)  fishy   |<br>|   % |/-----||             |<br>|     ||     ||             |<br>|                           |<br>+---------------------------+</pre></figure><p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
