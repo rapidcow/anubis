@@ -93,24 +93,14 @@ href="https://bsky.app/profile/celphase.bsky.social">CELPHASE</a>.</p>
 
 templ index() {
 	<div class="centered-div">
-		<figure id="image-hmmm" class="ascii-image"><pre>+---------------------------+
-|                           |
-|             ^__^          |
-|   %  ______/(&gt;&gt;)  hmmmm   |
-|   \/(      /(__)   ...    |
-|     |/-----|\_/           |
-|     ||     |              |
-|                           |
-+---------------------------+
-</pre></figure>
-		<figure id="image-pass" style="display:none" class="ascii-image"><pre>+---------------------------+
-|                           |
-|             ^__^          |
-|   %  ______/(^^)  good    |
-|   \/(      /(__)  job!    |
-|     |/-----|\_b           |
-|     ||     |              |
-|                           |
+		<figure class="cow-image"><pre id="image" class="pensive">+---------------------------+<br>
+|                           |<br>
+|             ^__^          |<br>
+|   %  ______/(&gt;&gt;)  hmmmm   |<br>
+|   \/(      /(__)   ...    |<br>
+|     |/-----|\_/           |<br>
+|     ||     |              |<br>
+|                           |<br>
 +---------------------------+
 </pre></figure>
 		<p id="status">Loading...</p>
@@ -185,14 +175,14 @@ Otherwise have a great day, night, wherever you are in the world!)
 
 templ errorPage(message string, mail string) {
 	<div class="centered-div">
-		<figure id="image-ouch" class="ascii-image"><pre>+---------------------------+
-|                           |
-|             ^__^          |
-|      ______/(xx)  nuh     |
-|    /(      /(__)  uh!!!   |
-|   % //_____\\ U           |
-|    //       \\            |
-|                           |
+<figure class="cow-image"><pre id="image" class="error">+---------------------------+<br>
+|                           |<br>
+|             ^__^          |<br>
+|      ______/(66)  mmm...  |<br>
+|    /(      /(__)  fishy   |<br>
+|   % |/-----||             |<br>
+|     ||     ||             |<br>
+|                           |<br>
 +---------------------------+
 </pre></figure>
 		<p>{ message }.</p>
@@ -202,7 +192,7 @@ templ errorPage(message string, mail string) {
 				<a href="/">Go home</a> or if you believe you should not be blocked, please contact the webmaster at
 				<a href={ "mailto:" + templ.SafeURL(mail) }>
 					{ mail }
-				</a>
+				</a>.
 			</p>
 		} else {
 			<p><a href="/">Go home</a></p>
