@@ -124,3 +124,19 @@ blockquote {
 footer {
   text-align: center;
 }
+
+/* More stuff!
+>*---------------------------------------------------<*/
+.ascii-image {
+  width: 100%;
+  max-width: 250px;
+
+  pre {
+    font-size: 1.2rem;
+
+    .pensive { /* inherit */ }
+    .reject { /* inherit */ }
+    .happy { /* inherit */ }
+    .error { /* inherit */ }
+  }
+}

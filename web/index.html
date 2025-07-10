@@ -93,14 +93,24 @@ href="https://bsky.app/profile/celphase.bsky.social">CELPHASE</a>.</p>
 
 templ index() {
 	<div class="centered-div">
-		<figure class="cow-image"><pre id="image" class="pensive">+---------------------------+<br>
-|                           |<br>
-|             ^__^          |<br>
-|   %  ______/(&gt;&gt;)  hmmmm   |<br>
-|   \/(      /(__)   ...    |<br>
-|     |/-----|\_/           |<br>
-|     ||     |              |<br>
-|                           |<br>
+		<figure id="image-hmmm" class="ascii-image"><pre>+---------------------------+
+|                           |
+|             ^__^          |
+|   %  ______/(&gt;&gt;)  hmmmm   |
+|   \/(      /(__)   ...    |
+|     |/-----|\_/           |
+|     ||     |              |
+|                           |
++---------------------------+
+</pre></figure>
+		<figure id="image-pass" style="display:none" class="ascii-image"><pre>+---------------------------+
+|                           |
+|             ^__^          |
+|   %  ______/(^^)  good    |
+|   \/(      /(__)  job!    |
+|     |/-----|\_b           |
+|     ||     |              |
+|                           |
 +---------------------------+
 </pre></figure>
 		<p id="status">Loading...</p>
@@ -175,14 +185,14 @@ Otherwise have a great day, night, wherever you are in the world!)
 
 templ errorPage(message string, mail string) {
 	<div class="centered-div">
-<figure class="cow-image"><pre id="image" class="error">+---------------------------+<br>
-|                           |<br>
-|             ^__^          |<br>
-|      ______/(66)  uh...   |<br>
-|    /(      /(__)  nope?   |<br>
-|   % |/-----||             |<br>
-|     ||     ||             |<br>
-|                           |<br>
+		<figure id="image-ouch" class="ascii-image"><pre>+---------------------------+
+|                           |
+|             ^__^          |
+|      ______/(xx)  nuh     |
+|    /(      /(__)  uh!!!   |
+|   % //_____\\ U           |
+|    //       \\            |
+|                           |
 +---------------------------+
 </pre></figure>
 		<p>{ message }.</p>
@@ -235,16 +245,7 @@ templ bench() {
 			></tbody>
 		</table>
 		<div class="centered-div">
-		<figure class="cow-image"><pre id="image" class="pensive">+---------------------------+
-|                           |
-|             ^__^          |
-|   %  ______/(&gt;&gt;)  hmmmm   |
-|   \/(      /(__)   ...    |
-|     |/-----|\_/           |
-|     ||     |              |
-|                           |
-+---------------------------+
-</pre></figure>
+			<img id="image" style="width:100%;max-width:256px;" src={ anubis.BasePrefix + "/.within.website/x/cmd/anubis/static/img/pensive.webp?cacheBuster=" + anubis.Version }/>
 			<p id="status" style="max-width:256px">Loading...</p>
 			<script async type="module" src={ anubis.BasePrefix + "/.within.website/x/cmd/anubis/static/js/bench.mjs?cacheBuster=" + anubis.Version }></script>
 			<div id="sparkline"></div>
