@@ -21,6 +21,7 @@ install: ${prefix}/bin/anubis ${prefix}/etc/anubis/nginx.env
 install-local: ${prefix}/bin/anubis ${prefix}/etc/anubis/local.env
 
 ${prefix}/bin/anubis: ../var/anubis
+	install -m755 -d ${prefix}/bin
 	install -m755 ../var/anubis $@
 
 ${prefix}/etc/anubis/nginx.env: etc/anubis/nginx.env
