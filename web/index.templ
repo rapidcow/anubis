@@ -203,12 +203,16 @@ templ errorPage(message, mail, code string, localizer *localization.SimpleLocali
 
 templ StaticHappy(localizer *localization.SimpleLocalizer) {
 	<div class="centered-div">
-		<img
-			style="display:none;"
-			style="width:100%;max-width:256px;"
-			src={ "/.within.website/x/cmd/anubis/static/img/happy.webp?cacheBuster=" +
-    anubis.Version }
-		/>
+		<figure class="cow-image"><pre id="image" class="happy">+---------------------------+<br>
+|                           |<br>
+|             ^__^          |<br>
+|   %  ______/(^^)  good    |<br>
+|   \/(      /(__)  job!    |<br>
+|     |/-----|\_b           |<br>
+|     ||     |              |<br>
+|                           |<br>
++---------------------------+
+</pre></figure>
 		<p>{ localizer.T("static_check_endpoint") }</p>
 	</div>
 }
