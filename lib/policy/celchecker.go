@@ -5,7 +5,8 @@ import (
 	"net/http"
 
 	"github.com/TecharoHQ/anubis/internal"
-	"github.com/TecharoHQ/anubis/lib/policy/config"
+	"github.com/TecharoHQ/anubis/internal/dns"
+	"github.com/TecharoHQ/anubis/lib/config"
 	"github.com/TecharoHQ/anubis/lib/policy/expressions"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
@@ -16,8 +17,8 @@ type CELChecker struct {
 	src     string
 }
 
-func NewCELChecker(cfg *config.ExpressionOrList) (*CELChecker, error) {
-	env, err := expressions.BotEnvironment()
+func NewCELChecker(cfg *config.ExpressionOrList, dnsObj *dns.Dns) (*CELChecker, error) {
+	env, err := expressions.BotEnvironment(dnsObj)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +62,8 @@ func (cr *CELRequest) ResolveName(name string) (any, bool) {
 	switch name {
 	case "remoteAddress":
 		return cr.Header.Get("X-Real-Ip"), true
+	case "contentLength":
+		return cr.ContentLength, true
 	case "host":
 		return cr.Host, true
 	case "method":
@@ -73,6 +76,12 @@ func (cr *CELRequest) ResolveName(name string) (any, bool) {
 		return expressions.URLValues{Values: cr.URL.Query()}, true
 	case "headers":
 		return expressions.HTTPHeaders{Header: cr.Header}, true
+	case "load_1m":
+		return expressions.Load1(), true
+	case "load_5m":
+		return expressions.Load5(), true
+	case "load_15m":
+		return expressions.Load15(), true
 	default:
 		return nil, false
 	}

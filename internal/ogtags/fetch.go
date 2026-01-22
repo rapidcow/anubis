@@ -20,28 +20,41 @@ var (
 
 // fetchHTMLDocumentWithCache fetches the HTML document from the given URL string,
 // preserving the original host header.
-func (c *OGTagCache) fetchHTMLDocumentWithCache(urlStr string, originalHost string, cacheKey string) (*html.Node, error) {
-	req, err := http.NewRequestWithContext(context.Background(), "GET", urlStr, nil)
+func (c *OGTagCache) fetchHTMLDocumentWithCache(ctx context.Context, urlStr string, originalHost string, cacheKey string) (*html.Node, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", urlStr, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create http request: %w", err)
 	}
 
 	// Set the Host header to the original host
-	if originalHost != "" {
-		req.Host = originalHost
+	var hostForRequest string
+	switch {
+	case c.targetHost != "":
+		hostForRequest = c.targetHost
+	case originalHost != "":
+		hostForRequest = originalHost
+	}
+	if hostForRequest != "" {
+		req.Host = hostForRequest
 	}
 
 	// Add proxy headers
 	req.Header.Set("X-Forwarded-Proto", "https")
 	req.Header.Set("User-Agent", "Anubis-OGTag-Fetcher/1.0") // For tracking purposes
 
+	serverName := hostForRequest
+	if serverName == "" {
+		serverName = req.URL.Hostname()
+	}
+	client := c.clientForSNI(serverName)
+
 	// Send the request
-	resp, err := c.client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		var netErr net.Error
 		if errors.As(err, &netErr) && netErr.Timeout() {
 			slog.Debug("og: request timed out", "url", urlStr)
-			c.cache.Set(cacheKey, emptyMap, c.ogTimeToLive/2) // Cache empty result for half the TTL to not spam the server
+			c.cache.Set(ctx, cacheKey, emptyMap, c.ogTimeToLive/2) // Cache empty result for half the TTL to not spam the server
 		}
 		return nil, fmt.Errorf("http get failed: %w", err)
 	}
@@ -56,7 +69,7 @@ func (c *OGTagCache) fetchHTMLDocumentWithCache(urlStr string, originalHost stri
 
 	if resp.StatusCode != http.StatusOK {
 		slog.Debug("og: received non-OK status code", "url", urlStr, "status", resp.StatusCode)
-		c.cache.Set(cacheKey, emptyMap, c.ogTimeToLive) // Cache empty result for non-successful status codes
+		c.cache.Set(ctx, cacheKey, emptyMap, c.ogTimeToLive) // Cache empty result for non-successful status codes
 		return nil, fmt.Errorf("%w: page not found", ErrOgHandled)
 	}
 
