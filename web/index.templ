@@ -3,13 +3,15 @@ package web
 import (
 	"fmt"
 	"github.com/TecharoHQ/anubis"
-	"github.com/TecharoHQ/anubis/lib/policy/config"
+	"github.com/TecharoHQ/anubis/lib/config"
+	"github.com/TecharoHQ/anubis/lib/localization"
 	"github.com/TecharoHQ/anubis/xess"
+	"github.com/google/uuid"
 )
 
-templ base(title string, body templ.Component, impressum *config.Impressum, challenge any, ogTags map[string]string) {
+templ base(title string, body templ.Component, impressum *config.Impressum, challenge any, ogTags map[string]string, localizer *localization.SimpleLocalizer) {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html lang={ localizer.GetLang() }>
 		<head>
 			<title>{ title }</title>
 			<link rel="stylesheet" href={ anubis.BasePrefix + xess.URL }/>
@@ -57,34 +59,31 @@ templ base(title string, body templ.Component, impressum *config.Impressum, chal
         }
     	</style>
 			@templ.JSONScript("anubis_version", anubis.Version)
-			if challenge != nil {
-				@templ.JSONScript("anubis_challenge", challenge)
-			}
+			@templ.JSONScript("anubis_challenge", challenge)
 			@templ.JSONScript("anubis_base_prefix", anubis.BasePrefix)
+			@templ.JSONScript("anubis_public_url", anubis.PublicUrl)
 		</head>
 		<body id="top">
+			@honeypotLink(fmt.Sprintf("%shoneypot/%s/init", anubis.APIPrefix, uuid.NewString()))
 			<main>
-				<center>
-					<h1 id="title" class=".centered-div">{ title }</h1>
-				</center>
+				<h1 id="title" class="centered-div">{ title }</h1>
 				@body
 				<footer>
-					<center>
+					<div class="centered-div">
 						<p>
-							Protected by <a rel="noopener noreferrer"
-                                                                        href="https://github.com/TecharoHQ/anubis">Anubis</a> from <a
-	rel="noopener noreferrer"
-	href="https://techaro.lol/"
->Techaro</a>. Made with ❤️ in 🇨🇦.
+							{ localizer.T("protected_by") } <a href="https://github.com/TecharoHQ/anubis">Anubis</a> { localizer.T("protected_from") } <a
+	href="https://techaro.lol"
+>Techaro</a>. { localizer.T("made_with") }.
 						</p>
-						<p>Mascot design by <a
-rel="noopener noreferrer"
-href="https://bsky.app/profile/celphase.bsky.social">CELPHASE</a>.</p>
+						<p>{ localizer.T("mascot_design") } <a href="https://bsky.app/profile/celphase.bsky.social">{ localizer.T("celphase") }</a>.</p>
 						if impressum != nil {
-							<p>@templ.Raw(impressum.Footer)
--- <a href={ templ.SafeURL(fmt.Sprintf("%simprint", anubis.APIPrefix)) }>Imprint</a></p>
+							<p>
+								@templ.Raw(impressum.Footer)
+								-- <a href={ templ.SafeURL(fmt.Sprintf("%simprint", anubis.APIPrefix)) }>Imprint</a>
+							</p>
 						}
-					</center>
+						<p>{ localizer.T("version_info") } <code>{ anubis.Version }</code>.</p>
+					</div>
 				</footer>
 			</main>
 		</body>
@@ -173,7 +172,7 @@ Otherwise have a great day, night, wherever you are in the world!)
 	</div>
 }
 
-templ errorPage(message string, mail string) {
+templ errorPage(message, mail, code string, localizer *localization.SimpleLocalizer) {
 	<div class="centered-div">
 <figure class="cow-image"><pre id="image" class="error">+---------------------------+<br>
 |                           |<br>
@@ -186,21 +185,23 @@ templ errorPage(message string, mail string) {
 +---------------------------+
 </pre></figure>
 		<p>{ message }.</p>
-		<button onClick="window.location.reload();">Try again</button>
+		if code != "" {
+			<code><pre>{ code }</pre></code>
+		}
 		if mail != "" {
 			<p>
-				<a href="/">Go home</a> or if you believe you should not be blocked, please contact the webmaster at
+				<a href="/">{ localizer.T("go_home") }</a> { localizer.T("contact_webmaster") }
 				<a href={ "mailto:" + templ.SafeURL(mail) }>
 					{ mail }
 				</a>.
 			</p>
 		} else {
-			<p><a href="/">Go home</a></p>
+			<p><a href="/">{ localizer.T("go_home") }</a></p>
 		}
 	</div>
 }
 
-templ StaticHappy() {
+templ StaticHappy(localizer *localization.SimpleLocalizer) {
 	<div class="centered-div">
 		<img
 			style="display:none;"
@@ -208,25 +209,25 @@ templ StaticHappy() {
 			src={ "/.within.website/x/cmd/anubis/static/img/happy.webp?cacheBuster=" +
     anubis.Version }
 		/>
-		<p>This is just a check endpoint for your reverse proxy to use.</p>
+		<p>{ localizer.T("static_check_endpoint") }</p>
 	</div>
 }
 
-templ bench() {
+templ bench(localizer *localization.SimpleLocalizer) {
 	<div style="height:20rem;display:flex">
 		<table style="margin-top:1rem;display:grid;grid-template:auto 1fr/auto auto;gap:0 0.5rem">
 			<thead
 				style="border-bottom:1px solid black;padding:0.25rem 0;display:grid;grid-template:1fr/subgrid;grid-column:1/-1"
 			>
 				<tr id="table-header" style="display:contents">
-					<th style="width:4.5rem">Time</th>
-					<th style="width:4rem">Iters</th>
+					<th style="width:4.5rem">{ localizer.T("time") }</th>
+					<th style="width:4rem">{ localizer.T("iters") }</th>
 				</tr>
 				<tr id="table-header-compare" style="display:none">
-					<th style="width:4.5rem">Time A</th>
-					<th style="width:4rem">Iters A</th>
-					<th style="width:4.5rem">Time B</th>
-					<th style="width:4rem">Iters B</th>
+					<th style="width:4.5rem">{ localizer.T("time_a") }</th>
+					<th style="width:4rem">{ localizer.T("iters_a") }</th>
+					<th style="width:4.5rem">{ localizer.T("time_b") }</th>
+					<th style="width:4rem">{ localizer.T("iters_b") }</th>
 				</tr>
 			</thead>
 			<tbody
@@ -245,25 +246,25 @@ templ bench() {
 |                           |
 +---------------------------+
 </pre></figure>
-			<p id="status" style="max-width:256px">Loading...</p>
+			<p id="status" style="max-width:256px">{ localizer.T("loading") }</p>
 			<script async type="module" src={ anubis.BasePrefix + "/.within.website/x/cmd/anubis/static/js/bench.mjs?cacheBuster=" + anubis.Version }></script>
 			<div id="sparkline"></div>
 			<noscript>
-				<p>Running the benchmark tool requires JavaScript to be enabled.</p>
+				<p>{ localizer.T("benchmark_requires_js") }</p>
 			</noscript>
 		</div>
 	</div>
 	<form id="controls" style="position:fixed;top:0.5rem;right:0.5rem">
 		<div style="display:flex;justify-content:end">
-			<label for="difficulty-input" style="margin-right:0.5rem">Difficulty:</label>
+			<label for="difficulty-input" style="margin-right:0.5rem">{ localizer.T("difficulty") }</label>
 			<input id="difficulty-input" type="number" name="difficulty" style="width:3rem"/>
 		</div>
 		<div style="margin-top:0.25rem;display:flex;justify-content:end">
-			<label for="algorithm-select" style="margin-right:0.5rem">Algorithm:</label>
+			<label for="algorithm-select" style="margin-right:0.5rem">{ localizer.T("algorithm") }</label>
 			<select id="algorithm-select" name="algorithm"></select>
 		</div>
 		<div style="margin-top:0.25rem;display:flex;justify-content:end">
-			<label for="compare-select" style="margin-right:0.5rem">Compare:</label>
+			<label for="compare-select" style="margin-right:0.5rem">{ localizer.T("compare") }</label>
 			<select id="compare-select" name="compare">
 				<option value="NONE">-</option>
 			</select>

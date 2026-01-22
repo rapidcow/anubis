@@ -21,42 +21,32 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-tags: true
           fetch-depth: 0
           persist-credentials: false
 
+      - name: build essential
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
       - name: Set lowercase image name
         run: |
           echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
-      - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@main
-
-      - name: Setup Homebrew cellar cache
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
-          path: |
-            /home/linuxbrew/.linuxbrew/Cellar
-            /home/linuxbrew/.linuxbrew/bin
-            /home/linuxbrew/.linuxbrew/etc
-            /home/linuxbrew/.linuxbrew/include
-            /home/linuxbrew/.linuxbrew/lib
-            /home/linuxbrew/.linuxbrew/opt
-            /home/linuxbrew/.linuxbrew/sbin
-            /home/linuxbrew/.linuxbrew/share
-            /home/linuxbrew/.linuxbrew/var
-          key: ${{ runner.os }}-go-homebrew-cellar-${{ hashFiles('go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-homebrew-cellar-
+          node-version: '24.11.0'
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version: '1.25.4'
 
-      - name: Install Brew dependencies
-        run: |
-          brew bundle
+      - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
 
       - name: Log into registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -64,7 +54,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: ${{ env.IMAGE }}
 
@@ -78,7 +68,7 @@ jobs:
           SLOG_LEVEL: debug
 
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
         with:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.build.outputs.digest }}

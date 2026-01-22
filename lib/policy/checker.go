@@ -51,6 +51,11 @@ func (rac *RemoteAddrChecker) Check(r *http.Request) (bool, error) {
 		return false, fmt.Errorf("%w: %s is not an IP address: %w", ErrMisconfiguration, host, err)
 	}
 
+	// Convert IPv4-mapped IPv6 addresses to IPv4
+	if addr.Is6() && addr.Is4In6() {
+		addr = addr.Unmap()
+	}
+
 	return rac.prefixTable.Contains(addr), nil
 }
 
@@ -102,6 +107,13 @@ func NewPathChecker(rexStr string) (checker.Impl, error) {
 }
 
 func (pc *PathChecker) Check(r *http.Request) (bool, error) {
+	originalUrl := r.Header.Get("X-Original-URI")
+	if originalUrl != "" {
+		if pc.regexp.MatchString(originalUrl) {
+			return true, nil
+		}
+	}
+
 	if pc.regexp.MatchString(r.URL.Path) {
 		return true, nil
 	}

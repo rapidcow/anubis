@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,6 +13,13 @@ import (
 	"github.com/TecharoHQ/anubis"
 	"github.com/sebest/xff"
 )
+
+type realIPKey struct{}
+
+func RealIP(r *http.Request) (netip.Addr, bool) {
+	result, ok := r.Context().Value(realIPKey{}).(netip.Addr)
+	return result, ok
+}
 
 // TODO: move into config
 type XFFComputePreferences struct {
@@ -34,6 +42,22 @@ func UnchangingCache(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=31536000")
+		next.ServeHTTP(w, r)
+	})
+}
+
+// CustomXRealIPHeader sets the X-Real-IP header to the value of a
+// different header.
+// Used in environments where the upstream proxy sets the request's
+// origin IP in a custom header.
+func CustomRealIPHeader(customRealIPHeaderValue string, next http.Handler) http.Handler {
+	if customRealIPHeaderValue == "" {
+		slog.Debug("skipping middleware, customRealIPHeaderValue is empty")
+		return next
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Header.Set("X-Real-IP", r.Header.Get(customRealIPHeaderValue))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -61,6 +85,9 @@ func RemoteXRealIP(useRemoteAddress bool, bindNetwork string, next http.Handler)
 			panic(err) // this should never happen
 		}
 		r.Header.Set("X-Real-Ip", host)
+		if addr, err := netip.ParseAddr(host); err == nil {
+			r = r.WithContext(context.WithValue(r.Context(), realIPKey{}, addr))
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -71,8 +98,11 @@ func XForwardedForToXRealIP(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if xffHeader := r.Header.Get("X-Forwarded-For"); r.Header.Get("X-Real-Ip") == "" && xffHeader != "" {
 			ip := xff.Parse(xffHeader)
-			slog.Debug("setting x-real-ip", "val", ip)
+			slog.Debug("setting X-Real-Ip from X-Forwarded-For", "to", ip, "x-forwarded-for", xffHeader)
 			r.Header.Set("X-Real-Ip", ip)
+			if addr, err := netip.ParseAddr(ip); err == nil {
+				r = r.WithContext(context.WithValue(r.Context(), realIPKey{}, addr))
+			}
 		}
 
 		next.ServeHTTP(w, r)
@@ -153,7 +183,7 @@ func computeXFFHeader(remoteAddr string, origXFFHeader string, pref XFFComputePr
 	// generally they'd be expected to do these two things on
 	// their own end to find the first non-spoofed IP
 	for i := len(origForwardedList) - 1; i >= 0; i-- {
-		segmentIP, err := netip.ParseAddr(origForwardedList[i])
+		segmentIP, err := netip.ParseAddr(strings.TrimSpace(origForwardedList[i]))
 		if err != nil {
 			// can't assess this element, so the remainder of the chain
 			// can't be trusted. not a fatal error, since anyone can

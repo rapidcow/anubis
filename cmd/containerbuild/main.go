@@ -28,7 +28,7 @@ func main() {
 	flagenv.Parse()
 	flag.Parse()
 
-	internal.InitSlog(*slogLevel)
+	slog.SetDefault(internal.InitSlog(*slogLevel, os.Stderr))
 
 	koDockerRepo := strings.TrimSuffix(*dockerRepo, "/"+filepath.Base(*dockerRepo))
 
@@ -44,6 +44,11 @@ func main() {
 			"github-event-name", *githubEventName,
 			"pull-request-id", *pullRequestID,
 		)
+	}
+
+	if strings.Contains(*dockerTags, ",") {
+		newTags := strings.Join(strings.Split(*dockerTags, ","), "\n")
+		dockerTags = &newTags
 	}
 
 	setOutput("docker_image", strings.SplitN(*dockerTags, "\n", 2)[0])
