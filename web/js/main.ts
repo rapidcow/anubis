@@ -16,10 +16,42 @@ const j = (id: string): any | null => {
   return JSON.parse(elem.textContent);
 };
 
-const imageURL = (mood, cacheBuster, basePrefix) =>
-  u(`${basePrefix}/.within.website/x/cmd/anubis/static/img/${mood}.webp`, {
-    cacheBuster,
-  });
+// from cowsay!!!
+const cows = {
+  pensive: (
+    "+----" +  "---------" +  "--------------+" + "\n" +
+    "|    " +  "         " +  "              |" + "\n" +
+    "|    " +  "         " +  "^__^          |" + "\n" +
+    "|   %" +  "  ______/" +  "(>>)  hmmmm   |" + "\n" +
+    "|   \\" + "/(      /" +  "(__)   ...    |" + "\n" +
+    "|    "  + " |/-----|\\" + "_/           |" + "\n" +
+    "|    "  + " ||     | "  + "             |" + "\n" +
+    "|    "  + "          "  + "             |" + "\n" +
+    "+----"  + "----------"  + "-------------+"
+  ),
+  happy: (
+    "+----" +  "---------" +  "--------------+" + "\n" +
+    "|    " +  "         " +  "              |" + "\n" +
+    "|    " +  "         " +  "^__^          |" + "\n" +
+    "|   %" +  "  ______/" +  "(^^)  good    |" + "\n" +
+    "|   \\" + "/(      /" +  "(__)  job!    |" + "\n" +
+    "|    "  + " |/-----|\\" + "_b           |" + "\n" +
+    "|    "  + " ||     | "  + "             |" + "\n" +
+    "|    "  + "          "  + "             |" + "\n" +
+    "+----"  + "----------"  + "-------------+"
+  ),
+  reject: (
+    "+-------------" +    "--------------+" + "\n" +
+    "|             " +    "              |" + "\n" +
+    "|             " +    "^__^          |" + "\n" +
+    "|      ______/" +    "(xx)  nuh     |" + "\n" +
+    "|    /(      /" +    "(__)  uh!!!   |" + "\n" +
+    "|   % //_____\\\\ "  + "U           |" + "\n" +
+    "|    //       \\\\"  + "            |" + "\n" +
+    "|             " +    "              |" + "\n" +
+    "+-------------" +    "--------------+"
+  ),
+};
 
 // Detect available languages by loading the manifest
 const getAvailableLanguages = async () => {
@@ -106,7 +138,7 @@ const t = (key) => translations[`js_${key}`] || translations[key] || key;
   ];
 
   const status: HTMLParagraphElement = document.getElementById("status") as HTMLParagraphElement;
-  const image: HTMLImageElement = document.getElementById("image") as HTMLImageElement;
+  const image: HTMLPreElement = document.getElementById("image") as HTMLPreElement;
   const title: HTMLHeadingElement = document.getElementById("title") as HTMLHeadingElement;
   const progress: HTMLDivElement = document.getElementById("progress") as HTMLDivElement;
 
@@ -123,10 +155,11 @@ const t = (key) => translations[`js_${key}`] || translations[key] || key;
     });
   }
 
-  const ohNoes = ({ titleMsg, statusMsg, imageSrc }) => {
+  const show = ({ titleMsg, statusMsg, verdict }) => {
     title.innerHTML = titleMsg;
     status.innerHTML = statusMsg;
-    image.src = imageSrc;
+    image.textContent = cows[verdict];
+    image.className = verdict;
     progress.style.display = "none";
   };
 
@@ -134,10 +167,10 @@ const t = (key) => translations[`js_${key}`] || translations[key] || key;
 
   for (const { value, name, msg } of dependencies) {
     if (!value) {
-      ohNoes({
+      show({
         titleMsg: `${t('missing_feature')} ${name}`,
         statusMsg: msg,
-        imageSrc: imageURL("reject", anubisVersion, basePrefix),
+        verdict: "reject",
       });
       return;
     }
@@ -147,10 +180,10 @@ const t = (key) => translations[`js_${key}`] || translations[key] || key;
 
   const process = algorithms[rules.algorithm];
   if (!process) {
-    ohNoes({
+    show({
       titleMsg: t('challenge_error'),
       statusMsg: t('challenge_error_msg'),
-      imageSrc: imageURL("reject", anubisVersion, basePrefix),
+      verdict: "reject",
     });
     return;
   }
@@ -254,10 +287,10 @@ const t = (key) => translations[`js_${key}`] || translations[key] || key;
       );
     }
   } catch (err) {
-    ohNoes({
+    show({
       titleMsg: t('calculation_error'),
       statusMsg: `${t('calculation_error_msg')} ${err.message}`,
-      imageSrc: imageURL("reject", anubisVersion, basePrefix),
+      verdict: "reject",
     });
   }
 })();
