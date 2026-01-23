@@ -41,4 +41,4 @@ const DefaultDifficulty = 4
 var ForcedLanguage = ""
 
 // UseSimplifiedExplanation can be set to true for using the simplified explanation
-var UseSimplifiedExplanation = false
+var UseSimplifiedExplanation = true
