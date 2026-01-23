@@ -34,7 +34,7 @@ func page(localizer *localization.SimpleLocalizer) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"centered-div\"><figure class=\"cow-image\"><pre id=\"image\" class=\"pensive\">+---------------------------+ |                           | |             ^__^          | |   %  ______/(&gt;&gt;)  hmmmm   | |   \\/(      /(__)   ...    | |     |/-----|\\_/           | |     ||     |              | |                           | +---------------------------+</pre></figure><img style=\"display:none;\" style=\"width:100%;max-width:256px;\" src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"centered-div\"><figure class=\"cow-image\"><pre id=\"image\" class=\"pensive\">+---------------------------+<br>|                           |<br>|             ^__^          |<br>|   %  ______/(&gt;&gt;)  hmmmm   |<br>|   \\/(      /(__)   ...    |<br>|     |/-----|\\_/           |<br>|     ||     |              |<br>|                           |<br>+---------------------------+<br></pre></figure><img style=\"display:none;\" style=\"width:100%;max-width:256px;\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
